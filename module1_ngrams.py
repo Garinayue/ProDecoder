@@ -56,7 +56,7 @@ def get_allfreq_ngrams(P, ngrams):
 
 # 定义函数，由所有报文得到n-grams，此处还未做频率的统计处理
 # 参数：第一个参数为n，便于尝试不同的n值；第二个参数为packets，即待划分的报文数据列表
-# 返回值：列表套列表，大列表中每个元素是一个列表，对应一条报文的n-grams
+# 返回值：列表套列表，大列表中每个元素是一个小列表，小列表对应一条报文的n-grams
 def get_separate_ngrams(n, packets):
     sep_ngrams = []  # 用于存放不同报文的n-grams列表的大列表
     num = len(packets)
@@ -74,7 +74,7 @@ def get_separate_ngrams(n, packets):
 # 定义函数，每个报文只保留频率较高的n-grams
 # 参数：第一个参数为 freq_ngrams，频数排名靠前的n-grams列表，即函数get_freq_ngrams的返回结果
 #       第二个参数为 ngrams, 各个报文n-grams列表组成的列表，即函数get_separate_ngrams的返回结果，大列表套小列表形式
-# 返回值：列表套列表，大列表中每个元素是一个列表，对应一条报文的高频n-grams
+# 返回值：列表套列表，大列表中每个元素是一个小列表，小列表对应一条报文的高频n-grams
 def get_sepfreq_ngrams(allfreq_ngrams, ngrams):
     sepfreq_ngrams = []  # 用于存放不同报文的高频n-grams列表的大列表
     num = len(ngrams)
@@ -105,8 +105,8 @@ def save_freq_file(file_name, content):
 # 主函数
 if __name__ == "__main__":
 
-    n = 4  # 初始化取值
-    P = 0.1  # 保留的频率和
+    n = 4  # 初始化取值，n-gram中 n 的取值
+    P = 0.1  # 保留的频率和，涉及的格式中随机内容较多，因此P值取的较小
 
     packets = read_inputs("inputs.txt")  # 读取文件，得到报文列表
     print("成功读取输入文件")

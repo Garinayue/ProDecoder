@@ -3,28 +3,20 @@ import random
 
 
 # 各字段的含义以及初值，全局变量
-# 四个固定的开始字节，下面四行分别属于四种不同的报文格式
-# head = "68656164"
-# head = "12345678"
-# head = "19991023"
-head = "56785678"
 
-# 两字节常量，指示源
-# src_indicator = "6672"
-# src_indicator = "3344"
-# src_indicator = "0915"
-src_indicator = "2020"
+# 四个固定的开始字节，有四种不同格式，main函数中赋值
+head = ""
 
-# 四字节变量，代表源地址
+# 两固定字节常量，指示来源，有四种不同格式，main函数中赋值
+src_indicator = ""
+
+# 四字节变量，代表源地址，由函数随机生成
 src = ""
 
-# 两字节常量，指示目的
-# dst_indicator = "746f"
-# dst_indicator = "8899"
-# dst_indicator = "0614"
-dst_indicator = "1226"
+# 两固定字节常量，指示目的，有四种不同格式，main函数中赋值
+dst_indicator = ""
 
-# 四字节变量，代表目的地址
+# 四字节变量，代表目的地址，由函数随机生成
 dst = ""
 
 content_indicator = "ffff"  # 两字节常量，表示后面是正文
@@ -82,7 +74,7 @@ def get_content(str_len):
 # 定义函数，用于批量生成报文
 # 参数：number，代表产生的报文数量
 # 返回值：所有报文组成的列表
-def get_inputs(number):
+def get_inputs(number, head, src_indicator, dst_indicator):
     packets = []  # 列表，用于存储所有报文，初始化为空
     for i in range(number):
         src = get_four_bytes()
@@ -112,8 +104,33 @@ def save_file(file_name, content_list):
 
 # 主函数，按照格式批量生成报文，并写入文件中
 if __name__ == "__main__":
-    num = 100  # 定义报文数目，即输入的数量
-    packets = get_inputs(num)  # 得到num条报文，列表形式
-    print("查看前十条报文：\n", packets[:10])  # 查看前10条
-    print("\n")
+
+    num = 100  # 定义每种格式的报文数目
+
+    # 第一种格式
+    head = "68656164"
+    src_indicator = "6672"
+    dst_indicator = "746f"
+    packets = get_inputs(num, head, src_indicator, dst_indicator)  # 得到num条报文，列表形式
+    save_file("inputs.txt", packets)  # 写入文件
+
+    # 第二种格式
+    head = "12345678"
+    src_indicator = "3344"
+    dst_indicator = "8899"
+    packets = get_inputs(num, head, src_indicator, dst_indicator)  # 得到num条报文，列表形式
+    save_file("inputs.txt", packets)  # 写入文件
+
+    # 第三种格式
+    head = "19991023"
+    src_indicator = "0915"
+    dst_indicator = "0614"
+    packets = get_inputs(num, head, src_indicator, dst_indicator)  # 得到num条报文，列表形式
+    save_file("inputs.txt", packets)  # 写入文件
+
+    # 第四种格式
+    head = "56785678"
+    src_indicator = "2020"
+    dst_indicator = "1226"
+    packets = get_inputs(num, head, src_indicator, dst_indicator)  # 得到num条报文，列表形式
     save_file("inputs.txt", packets)  # 写入文件

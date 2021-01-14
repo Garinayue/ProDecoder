@@ -10,7 +10,7 @@ lda库
 
 ## 实验过程
 
-可以删除几个txt文件，然后按序运行module0_inputs.py、module1_ngrams.py、module3_sch.py和module4_NW.py，跳过module2_lda.py(无需运行)。在运行module0_inputs.py时，需要运行四次，每次改变注释掉的固定格式内容，即依次产生四种格式的报文。
+可以删除几个txt文件，然后按序运行module0_inputs.py、module1_ngrams.py、module3_sch.py和module4_NW.py，跳过module2_lda.py(无需运行)。
 
 或者也可以保留inputs.txt文件，便无需运行module0_inputs.py。
 
