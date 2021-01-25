@@ -163,27 +163,59 @@ def read_inputs(file_name):
 # 参数：文件名
 # 返回值：固定字节组成的字符串
 def format_string(file_name):
-    # 读取报文，按照报文长度升序排序
-    packets = read_inputs(file_name)
-    packets.sort(key=lambda i: len(i))
-    # 初始化
-    t = 0  # 记录第几轮遍历了
-    num = len(packets)
-    raw = packets[:num//2]  # 为了加快速度，只取了前一半报文
-    # 多轮遍历，直到只剩下一个格式串
-    while len(raw) > 1:
-        same = []  # 保存本轮遍历提取的字符串
-        num = len(raw)  # raw是本轮遍历的内容
-        if(num % 2 != 0):  # 防止奇数，i+1可能越界
-            num -= 1
-        for i in range(0, num, 2):  # 遍历raw中串，进一步提取相同格式串
-            res = same_string(raw[i], raw[i+1])
-            same.append(res[2])
-        print("第%d轮遍历提取的结果为：" % (t))
-        print(same)
-        raw = same  # 下一轮初始化
-        t += 1
-    return same
+    inputs = read_inputs(file_name)
+    num = len(inputs)
+    son = num // 5  # 10个报文作为一个子区间
+    e = 10  # 阈值，决定保留或者删除两串的对齐结果，用于应对聚类错误的串
+
+    # 多次随机删除，防止聚类有误
+    delete_ans = []  # 存放多次随即删除和阈值判断后的结果
+    for i in range(4):
+        random_inputs = random.sample(inputs, len(inputs)//2)  # 每次随机删除一半，即只保留一半的报文
+        random_inputs.sort(key=lambda i: len(i))  # 按长度排序
+        # 多次打乱，防止可能出现的匹配不完全
+        shuffle_ans = []  # 存放多次随机打乱后的结果
+        for j in range(5):
+            shuffle_inputs = []
+            for k in range(son):  # 将报文在各个小区间内打乱，random.shuffle会改变原有列表，而不是生成新列表
+                tmp = random_inputs[k*20:(k+1)*20]
+                random.shuffle(tmp)
+                shuffle_inputs += tmp
+            random_inputs = shuffle_inputs  # 作为下一次的输入，不是总对原始txt进行打乱
+            # 初始化
+            t = 0  # 记录第几轮遍历了
+            raw = shuffle_inputs
+            # 多轮遍历，直到只剩下一个格式串
+            while len(raw) > 1:
+                same = []  # 保存本轮遍历提取的字符串
+                num = len(raw)  # raw是本轮遍历的内容
+                if(num % 2 != 0):  # 防止奇数，i+1可能越界
+                    num -= 1
+                for k in range(0, num, 2):  # 遍历raw中串，进一步提取相同格式串
+                    res = same_string(raw[k], raw[k+1])
+                    if len(res[2]) > e:  # 阈值判断，只保留长度超过阈值的
+                        same.append(res[2])
+                raw = same  # 下一轮初始化
+                t += 1
+            if(len(same) != 0):  # 防止最后一轮遍历时由于不满足阈值限制导致结果为空
+                shuffle_ans.append(same[0])  # 每次随机过程完全结束后，存储最终得到的格式串
+        # 按频数排序，取频数最高的，作为本次随机打乱后的结果
+        freq_dict = {}
+        for k in shuffle_ans:
+            freq_dict[k] = shuffle_ans.count(k)
+        ordered = sorted(freq_dict.items(), key=lambda item: item[1], reverse=True)  # 按照字典的value排序
+        print("\n第%d次随机删除后，多次随机打乱的结果按频率排序为：" % (i+1))
+        print(ordered)
+        print("频数最高的格式串为：", ordered[0][0])
+        # 存储频数最高的格式串，作为最外面循环的一次结果
+        delete_ans.append(ordered[0][0])
+        print("当前存储的可能格式串为：", delete_ans)
+    # 仍是频数最高的作为返回结果
+    freq_dict = {}
+    for k in delete_ans:
+        freq_dict[k] = delete_ans.count(k)
+    ordered = sorted(freq_dict.items(), key=lambda item: item[1], reverse=True)  # 按照字典的value排序
+    return ordered[0][0]  # 返回最长格式串
 
 
 # 函数：将固定字节组成的连续字符串拆分开，得到报文中对应的多个格式串
@@ -193,54 +225,57 @@ def break_string(file_name, same):
     # 读取报文，按照报文长度升序排序
     packets = read_inputs(file_name)
     packets.sort(key=lambda i: len(i))
-    random_index = random.sample(range(0, len(packets)), 5)  # 随机生成5个报文的索引
-    all_res = []  # 记录与多个报文进行比对后的多个拆分结果
-
-    # 得到根据不同报文得到的可能不同的拆分结果，记录在all_res中
-    for i in random_index:
-        tmp1 = packets[i]  # 报文的字符串
-        tmp2 = same[0]  # 多序列对比提取的固定格式串
-        start = 0
-        end = 1
-        res = []
-        while(end <= len(tmp2)):
-            while tmp1.find(tmp2[start:end]) != -1:  # 匹配最长子串
-                end += 1
-                if(end == len(tmp2)+1):  # 最后一个字符属于某子串，防止end无穷加下去
+    sample = random.sample(packets, 4)  # 随机选择4个报文
+    e = 10  # 阈值，判定是否选到了错误报文
+    res1 = same_string(sample[0], sample[1])
+    res2 = same_string(sample[2], sample[3])
+    res3 = same_string(res1[2], res2[2])
+    if min(len(res1[2]), len(res2[2]), len(res3[2])) > e:  # 认为没有选到错误报文，开始拆分，下面所有代码都在if内
+        all_res = []  # 记录与多个报文进行比对后的多个拆分结果
+        # 得到根据不同报文得到的可能不同的拆分结果，记录在all_res中
+        for i in sample:
+            tmp1 = i  # 报文的字符串
+            tmp2 = same  # 多序列对比提取的固定格式串
+            start = 0
+            end = 1
+            res = []
+            while(end <= len(tmp2)):
+                while tmp1.find(tmp2[start:end]) != -1:  # 匹配最长子串
+                    end += 1
+                    if(end == len(tmp2)+1):  # 最后一个字符属于某子串，防止end无穷加下去
+                        break
+                end -= 1
+                res.append(tmp2[start:end])  # 输出该匹配的子串
+                start = end  # 更新位置，为下一轮做准备
+                if(end == len(tmp2)):
                     break
-            end -= 1
-            res.append(tmp2[start:end])  # 输出该匹配的子串
-            start = end  # 更新位置，为下一轮做准备
-            if(end == len(tmp2)):
-                break
-        all_res.append(res)
-
-    # 对all_res进行处理，得到最终的拆分结果
-    # 首先，得到最大的子串数目，即最细致的，删除字串数目小于n的，因为可能合并了原本分开的子串
-    length = []
-    for i in range(5):
-        length.append(len(all_res[i]))
-    n = max(length)  # 子串个数
-    m = 5  # 报文数目/all_res中元素个数
-    i = 0
-    while i < m:
-        if len(all_res[i]) < n:
-            all_res.pop(i)
-            m -= 1
-        i += 1
-    # 遍历剩下来的可能结果，对于每个子串，删除长度较长对应的拆分结果
-    for i in range(n):  # 遍历几个子串
-        j = 0
-        while j < m-1:  # 遍历根据每个报文的拆分结果，删除长度较长子串对应的拆分
-            if len(all_res[j][i]) > len(all_res[j+1][i]):  # 当前较长，删除
-                all_res.pop(j)
+            all_res.append(res)
+        # 对all_res进行处理，得到最终的拆分结果
+        # 首先，得到最大的子串数目，即最细致的，删除字串数目小于n的，因为可能合并了原本分开的子串
+        length = []
+        for i in range(4):
+            length.append(len(all_res[i]))
+        n = max(length)  # 子串个数
+        m = 4  # 报文数目/all_res中元素个数
+        i = 0
+        while i < m:
+            if len(all_res[i]) < n:
+                all_res.pop(i)
                 m -= 1
-            elif len(all_res[j][i]) < len(all_res[j+1][i]):  # 下一个较长，删除下一个
-                all_res.pop(j+1)
-                m -= 1
-            else:  # 长度相等
-                j += 1
-    return all_res
+            i += 1
+        # 遍历剩下来的可能结果，对于每个子串，删除长度较长对应的拆分结果
+        for i in range(n):  # 遍历几个子串
+            j = 0
+            while j < m-1:  # 遍历根据每个报文的拆分结果，删除长度较长子串对应的拆分
+                if len(all_res[j][i]) > len(all_res[j+1][i]):  # 当前较长，删除
+                    all_res.pop(j)
+                    m -= 1
+                elif len(all_res[j][i]) < len(all_res[j+1][i]):  # 下一个较长，删除下一个
+                    all_res.pop(j+1)
+                    m -= 1
+                else:  # 长度相等
+                    j += 1
+        return all_res
 
 
 if __name__ == "__main__":
